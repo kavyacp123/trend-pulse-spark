@@ -87,6 +87,16 @@ const Layout = ({ children }: LayoutProps) => {
                   <TrendingUp className="w-4 h-4 mr-2" />
                   Create Content
                 </Button>
+                
+                <Button
+                  variant={location.pathname === "/post" ? "default" : "ghost"}
+                  size="sm"
+                  onClick={() => navigate("/post")}
+                  className="transition-smooth"
+                >
+                  <TrendingUp className="w-4 h-4 mr-2" />
+                  Post
+                </Button>
               </nav>
             </div>
 

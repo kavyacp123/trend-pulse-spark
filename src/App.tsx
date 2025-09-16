@@ -7,6 +7,7 @@ import Login from "@/components/Login";
 import Dashboard from "@/components/Dashboard";
 import Settings from "@/components/Settings";
 import ContentCreation from "@/components/ContentCreation";
+import PostCreation from "@/components/PostCreation";
 import Layout from "@/components/Layout";
 import NotFound from "./pages/NotFound";
 
@@ -23,6 +24,7 @@ const App = () => (
             <Route path="/" element={<Login />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/create" element={<ContentCreation />} />
+            <Route path="/post" element={<PostCreation />} />
             <Route path="/settings" element={<Settings />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
