@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Login from "@/components/Login";
 import Dashboard from "@/components/Dashboard";
 import Settings from "@/components/Settings";
+import ContentCreation from "@/components/ContentCreation";
 import Layout from "@/components/Layout";
 import NotFound from "./pages/NotFound";
 
@@ -21,6 +22,7 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Login />} />
             <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/create" element={<ContentCreation />} />
             <Route path="/settings" element={<Settings />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />

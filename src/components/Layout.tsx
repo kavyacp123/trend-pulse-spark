@@ -79,13 +79,13 @@ const Layout = ({ children }: LayoutProps) => {
                 </Button>
                 
                 <Button
-                  variant={location.pathname === "/trends" ? "default" : "ghost"}
+                  variant={location.pathname === "/create" ? "default" : "ghost"}
                   size="sm"
-                  onClick={() => navigate("/trends")}
+                  onClick={() => navigate("/create")}
                   className="transition-smooth"
                 >
                   <TrendingUp className="w-4 h-4 mr-2" />
-                  Trends
+                  Create Content
                 </Button>
               </nav>
             </div>
