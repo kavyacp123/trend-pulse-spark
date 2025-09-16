@@ -8,6 +8,7 @@ import Dashboard from "@/components/Dashboard";
 import Settings from "@/components/Settings";
 import ContentCreation from "@/components/ContentCreation";
 import PostCreation from "@/components/PostCreation";
+import TrendDetails from "@/components/TrendDetails";
 import Layout from "@/components/Layout";
 import NotFound from "./pages/NotFound";
 
@@ -23,6 +24,7 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Login />} />
             <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/trends/:trendId" element={<TrendDetails />} />
             <Route path="/create" element={<ContentCreation />} />
             <Route path="/post" element={<PostCreation />} />
             <Route path="/settings" element={<Settings />} />
