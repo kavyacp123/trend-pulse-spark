@@ -1,0 +1,33 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:trenddb}
+    username: ${DB_USERNAME:admin}
+    password: ${DB_PASSWORD:password}
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+
+server:
+  port: ${SERVER_PORT:8080}
+
+logging:
+  level:
+    com.yourcompany.trendcollector: WARN
+    org.springframework: WARN
+
+app:
+  twitter:
+    api:
+      key: "${TWITTER_API_KEY}"
+
+  collection:
+    interval: 300000 # 5 minutes in production

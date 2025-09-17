@@ -1,0 +1,34 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:testdb
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+
+  h2:
+    console:
+      enabled: true
+
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: true
+
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      timeout: 2000ms
+
+logging:
+  level:
+    com.yourcompany.trendcollector: DEBUG
+    org.springframework.web: DEBUG
+
+app:
+  twitter:
+    api:
+      key: "your-dev-twitter-key"
+
+  collection:
+    interval: 30000 # 30 seconds for faster testing
