@@ -6,7 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Login from "@/components/Login";
 import Dashboard from "@/components/Dashboard";
 import Settings from "@/components/Settings";
-import ContentCreation from "@/components/ContentCreation";
+// import ContentCreation from "@/components/ContentCreation";
 import PostCreation from "@/components/PostCreation";
 import TrendDetails from "@/components/TrendDetails";
 import Layout from "@/components/Layout";
@@ -25,7 +25,7 @@ const App = () => (
             <Route path="/" element={<Login />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/trends/:trendId" element={<TrendDetails />} />
-            <Route path="/create" element={<ContentCreation />} />
+            {/* <Route path="/create" element={<ContentCreation />} /> */}
             <Route path="/post" element={<PostCreation />} />
             <Route path="/settings" element={<Settings />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

@@ -78,7 +78,7 @@ const Layout = ({ children }: LayoutProps) => {
                   Dashboard
                 </Button>
                 
-                <Button
+                {/* <Button
                   variant={location.pathname === "/create" ? "default" : "ghost"}
                   size="sm"
                   onClick={() => navigate("/create")}
@@ -86,7 +86,7 @@ const Layout = ({ children }: LayoutProps) => {
                 >
                   <TrendingUp className="w-4 h-4 mr-2" />
                   Create Content
-                </Button>
+                </Button> */}
                 
                 <Button
                   variant={location.pathname === "/post" ? "default" : "ghost"}
