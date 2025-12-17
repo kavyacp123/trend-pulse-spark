@@ -65,36 +65,47 @@ Automatically discover trending topics on Reddit, analyze them with AI, and gene
 
 ## 🏗️ Architecture
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                     TREND PULSE SPARK                            │
-│                   Monolithic Spring Boot App                     │
-├─────────────────────────────────────────────────────────────────┤
-│                                                                   │
-│  ┌──────────┐   ┌──────────┐   ┌──────────┐   ┌──────────┐    │
-│  │  Reddit  │──▶│  Trend   │──▶│    AI    │──▶│   Post   │    │
-│  │ Ingestion│   │  Engine  │   │ Analysis │   │Generator │    │
-│  └──────────┘   └──────────┘   └──────────┘   └──────────┘    │
-│       │              │               │               │          │
-│       ▼              ▼               ▼               ▼          │
-│  ┌─────────────────────────────────────────────────────────┐   │
-│  │              Redis Queue System                          │   │
-│  │  ai:analysis:queue  │  post:generate:queue              │   │
-│  └─────────────────────────────────────────────────────────┘   │
-│       │              │               │               │          │
-│       ▼              ▼               ▼               ▼          │
-│  ┌──────────┐   ┌──────────┐   ┌──────────┐   ┌──────────┐   │
-│  │  MinIO   │   │PostgreSQL│   │Analytics │   │  Reddit  │   │
-│  │ Storage  │   │ Database │   │Dashboard │   │ Posting  │   │
-│  └──────────┘   └──────────┘   └──────────┘   └──────────┘   │
-│                                                                   │
-└─────────────────────────────────────────────────────────────────┘
-```
+![alt text](<system desgin of trend spark .png>)
 
 **Event-Driven Architecture:**
 - Async processing with Redis queues
 - Retry logic with Dead Letter Queue (DLQ)
 - Scheduled workers for automation
+
+---
+## 🔄 Pipeline Flow
+
+### Complete Automated Pipeline
+
+```
+1. INGESTION (Every 15 min)
+   ├─ Fetch posts from Reddit API
+   ├─ Store raw JSON in MinIO
+   └─ Log ingestion to database
+
+2. TREND DETECTION (Every 30 min)
+   ├─ Read posts from MinIO
+   ├─ Extract trending topics (keyword analysis)
+   ├─ Calculate metrics (velocity, engagement)
+   ├─ Save trends to database
+   └─ Publish to ai:analysis:queue
+
+3. AI ANALYSIS (Queue worker, every 30 sec)
+   ├─ Consume from ai:analysis:queue
+   ├─ Call Gemini API for analysis
+   ├─ Save analysis results
+   └─ Publish to post:generate:queue
+
+4. POST GENERATION (Queue worker, every 30 sec)
+   ├─ Consume from post:generate:queue
+   ├─ Call Gemini for content generation
+   └─ Save as draft post
+
+5. REDDIT POSTING (Manual/API)
+   ├─ Review draft posts
+   ├─ Submit to Reddit API
+   └─ Track submission status
+```
 
 ---
 
@@ -335,75 +346,6 @@ Authorization: Bearer {jwt-token}
 
 ---
 
-## 🔄 Pipeline Flow
-
-### Complete Automated Pipeline
-
-```
-1. INGESTION (Every 15 min)
-   ├─ Fetch posts from Reddit API
-   ├─ Store raw JSON in MinIO
-   └─ Log ingestion to database
-
-2. TREND DETECTION (Every 30 min)
-   ├─ Read posts from MinIO
-   ├─ Extract trending topics (keyword analysis)
-   ├─ Calculate metrics (velocity, engagement)
-   ├─ Save trends to database
-   └─ Publish to ai:analysis:queue
-
-3. AI ANALYSIS (Queue worker, every 30 sec)
-   ├─ Consume from ai:analysis:queue
-   ├─ Call Gemini API for analysis
-   ├─ Save analysis results
-   └─ Publish to post:generate:queue
-
-4. POST GENERATION (Queue worker, every 30 sec)
-   ├─ Consume from post:generate:queue
-   ├─ Call Gemini for content generation
-   └─ Save as draft post
-
-5. REDDIT POSTING (Manual/API)
-   ├─ Review draft posts
-   ├─ Submit to Reddit API
-   └─ Track submission status
-```
-
----
-
-## 📁 Project Structure
-
-```
-trend-pulse-spark/
-├── backend/
-│   ├── src/main/java/com/trendpulse/
-│   │   ├── auth/              # Authentication & OAuth
-│   │   ├── ingestion/         # Reddit data fetching
-│   │   ├── trendengine/       # Trend detection
-│   │   ├── ai/                # AI analysis (Gemini)
-│   │   ├── postgenerator/     # Content generation
-│   │   ├── redditposting/     # Reddit posting
-│   │   ├── analytics/         # Dashboard APIs
-│   │   ├── common/            # Shared utilities
-│   │   ├── queue/             # Redis queue system
-│   │   └── storage/           # MinIO client
-│   ├── src/main/resources/
-│   │   ├── application.yml    # Main configuration
-│   │   └── db/migration/      # Flyway migrations
-│   ├── pom.xml
-│   └── README.md
-├── frontend/                   # React dashboard (optional)
-├── infrastructure/
-│   ├── docker/
-│   │   └── Dockerfile
-│   └── redis/
-│       └── redis.conf
-├── docker-compose.yml
-└── README.md
-```
-
----
-
 ## 👨‍💻 Development
 
 ### Running Tests
@@ -499,27 +441,6 @@ MINIO_SECRET_KEY=xxx
 
 ---
 
-## 📊 Monitoring
-
-### Health Check
-
-```bash
-curl http://localhost:8080/actuator/health
-```
-
-### Metrics (Prometheus)
-
-```bash
-curl http://localhost:8080/actuator/prometheus
-```
-
-### Application Info
-
-```bash
-curl http://localhost:8080/actuator/info
-```
-
----
 
 ## 🤝 Contributing
 
@@ -532,13 +453,6 @@ Contributions are welcome! Please follow these steps:
 5. Open a Pull Request
 
 ---
-
-## 📝 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
----
-
 ## 🙏 Acknowledgments
 
 - **Google Gemini** for free AI API
@@ -550,22 +464,12 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 📧 Contact
 
-**Project Maintainer**: Your Name  
-**Email**: your.email@example.com  
+**Project Maintainer**: kavya patel  
+**Email**: kavyapatel038@gmail.com  
 **GitHub**: [@yourusername](https://github.com/yourusername)
 
 ---
 
-## 🎯 Roadmap
-
-- [ ] Frontend dashboard (React)
-- [ ] Sentiment trend visualization
-- [ ] Multi-user support
-- [ ] Webhook notifications
-- [ ] Advanced AI models (GPT-4, Claude)
-- [ ] Scheduled posting
-- [ ] A/B testing for posts
-- [ ] Analytics export (CSV, PDF)
 
 ---
 
