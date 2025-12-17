@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Login from "@/components/Login";
 import Dashboard from "@/components/Dashboard";
 import Settings from "@/components/Settings";
+import Profile from "@/components/Profile";
 // import ContentCreation from "@/components/ContentCreation";
 import PostCreation from "@/components/PostCreation";
 import TrendDetails from "@/components/TrendDetails";
@@ -24,6 +25,7 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Login />} />
             <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/profile" element={<Profile />} />
             <Route path="/trends/:trendId" element={<TrendDetails />} />
             {/* <Route path="/create" element={<ContentCreation />} /> */}
             <Route path="/post" element={<PostCreation />} />
