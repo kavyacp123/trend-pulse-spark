@@ -1,0 +1,182 @@
+spring:
+  application:
+    name: trend-pulse-spark
+  
+  # Database Configuration
+  datasource:
+    url: jdbc:postgresql://localhost:5432/trendpulse
+    username: trendpulse_user
+    password: trendpulse_pass
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 5
+      connection-timeout: 20000
+      idle-timeout: 300000
+      max-lifetime: 1200000
+  
+  # JPA Configuration
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+        jdbc:
+          batch_size: 20
+        order_inserts: true
+        order_updates: true
+  
+  # Flyway Configuration
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    locations: classpath:db/migration
+  
+  # Redis Configuration
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      password: redis_pass
+      timeout: 2000ms
+      lettuce:
+        pool:
+          max-active: 8
+          max-idle: 8
+          min-idle: 2
+          max-wait: -1ms
+  
+  # Cache Configuration
+  cache:
+    type: redis
+    redis:
+      time-to-live: 300000 # 5 minutes
+  
+  # Security
+  security:
+    oauth2:
+      client:
+        registration:
+          reddit:
+            client-id: ${REDDIT_CLIENT_ID:your-reddit-client-id}
+            client-secret: ${REDDIT_CLIENT_SECRET:your-reddit-client-secret}
+            authorization-grant-type: authorization_code
+            redirect-uri: "{baseUrl}/auth/reddit/callback"
+            scope: identity,read,submit
+        provider:
+          reddit:
+            authorization-uri: https://www.reddit.com/api/v1/authorize
+            token-uri: https://www.reddit.com/api/v1/access_token
+            user-info-uri: https://oauth.reddit.com/api/v1/me
+            user-name-attribute: name
+
+# Application Configuration
+app:
+  # JWT Configuration
+  jwt:
+    secret: ${JWT_SECRET:your-256-bit-secret-key-change-this-in-production}
+    expiration: 86400000 # 24 hours
+    refresh-expiration: 604800000 # 7 days
+  
+  # MinIO Configuration
+  minio:
+    endpoint: http://localhost:9000
+    access-key: ${MINIO_ACCESS_KEY:minioadmin}
+    secret-key: ${MINIO_SECRET_KEY:minioadmin123}
+    bucket-name: trendpulse-raw-data
+  
+  # Reddit API Configuration
+  reddit:
+    api-url: https://oauth.reddit.com
+    user-agent: TrendPulseSpark/1.0
+    rate-limit:
+      requests-per-minute: 60
+  
+  # AI Configuration
+  ai:
+    provider: openai # openai, gemini, huggingface
+    openai:
+      api-key: ${OPENAI_API_KEY:your-openai-api-key}
+      model: gpt-3.5-turbo
+      max-tokens: 500
+  
+  # Queue Configuration
+  queue:
+    ai-analysis: ai:analysis:queue
+    post-generate: post:generate:queue
+    post-publish: post:publish:queue
+    retry:
+      max-attempts: 3
+      backoff-delay: 1000
+      backoff-multiplier: 2
+  
+  # Ingestion Configuration
+  ingestion:
+    schedule:
+      cron: "0 */15 * * * *" # Every 15 minutes
+    subreddits:
+      - technology
+      - programming
+      - artificial
+      - MachineLearning
+    posts-per-fetch: 100
+  
+  # Trend Detection Configuration
+  trend:
+    detection:
+      min-score: 50.0
+      velocity-weight: 0.4
+      engagement-weight: 0.6
+    analysis:
+      schedule:
+        cron: "0 */30 * * * *" # Every 30 minutes
+
+# Actuator Configuration
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: when-authorized
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+
+# Logging Configuration
+logging:
+  level:
+    root: INFO
+    com.trendpulse: DEBUG
+    org.springframework.web: INFO
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+
+# Resilience4j Configuration
+resilience4j:
+  circuitbreaker:
+    instances:
+      reddit-api:
+        sliding-window-size: 10
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 10000
+        permitted-number-of-calls-in-half-open-state: 3
+      ai-api:
+        sliding-window-size: 10
+        failure-rate-threshold: 60
+        wait-duration-in-open-state: 15000
+  
+  ratelimiter:
+    instances:
+      reddit-api:
+        limit-for-period: 60
+        limit-refresh-period: 60s
+        timeout-duration: 5s
