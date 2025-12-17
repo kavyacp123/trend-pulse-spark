@@ -466,7 +466,7 @@ Contributions are welcome! Please follow these steps:
 
 **Project Maintainer**: kavya patel  
 **Email**: kavyapatel038@gmail.com  
-**GitHub**: [@yourusername](https://github.com/yourusername)
+**GitHub**: [@kavyapatelcp123](https://github.com/kavyapatelcp123)
 
 ---
 
