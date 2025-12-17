@@ -16,15 +16,14 @@ Automatically discover trending topics on Reddit, analyze them with AI, and gene
 
 - [Features](#-features)
 - [Architecture](#-architecture)
+- [Pipeline Flow](#-pipeline-flow)
 - [Tech Stack](#-tech-stack)
 - [Quick Start](#-quick-start)
 - [Configuration](#-configuration)
 - [API Documentation](#-api-documentation)
-- [Pipeline Flow](#-pipeline-flow)
-- [Project Structure](#-project-structure)
 - [Development](#-development)
 - [Deployment](#-deployment)
-- [License](#-license)
+  
 
 ---
 
