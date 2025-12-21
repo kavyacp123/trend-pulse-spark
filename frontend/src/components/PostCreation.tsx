@@ -123,6 +123,9 @@ const trendingTopics = [
   'Blockchain Innovation'
 ];
 
+
+import api from "@/lib/api";
+
 const PostCreation = () => {
   const [content, setContent] = useState('');
   const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>(['twitter']);
@@ -188,31 +191,37 @@ const PostCreation = () => {
   const generateAIContent = async () => {
     setIsGenerating(true);
     try {
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      const payload = {
+        topic: trendingTopics[Math.floor(Math.random() * trendingTopics.length)], // ideally user selects this
+        platforms: selectedPlatforms,
+        tone: tone[0] > 60 ? 'casual' : tone[0] < 40 ? 'professional' : 'balanced',
+        style: contentStyle,
+        audience: targetAudience || 'general'
+      };
+
+      const response = await api.post('/posts/generate', payload);
       
-      const toneText = tone[0] > 60 ? 'casual and engaging' : tone[0] < 40 ? 'professional and formal' : 'balanced';
-      const audienceText = targetAudience || 'general audience';
-      
-      const generatedContent = `🚀 Just discovered some fascinating insights about ${trendingTopics[Math.floor(Math.random() * trendingTopics.length)]}!
+      // Assuming the backend returns { content: "..." }
+      // If the backend returns a different structure, this will need adjustment.
+      // Fallback for demo purposes if backend response is empty or structure differs slightly in dev
+      const generatedText = response.data.content || response.data; 
 
-Here's what ${audienceText.toLowerCase()} should know:
-• Revolutionary approaches changing the game
-• Data-driven results you can implement today  
-• Future-proof strategies for growth
+      if (typeof generatedText === 'string') {
+          setContent(generatedText);
+      } else {
+          console.error("Unexpected API response format", response.data);
+          throw new Error("Invalid response format");
+      }
 
-What's your take on this trend? 
-
-#Innovation #Trends #Growth ${contentStyle === 'Professional/Business' ? '#Business #Strategy' : '#Community #Discussion'}`;
-
-      setContent(generatedContent);
       toast({
         title: "Content generated successfully!",
         description: "AI has created optimized content based on your preferences.",
       });
     } catch (error) {
+      console.error("AI Generation error:", error);
       toast({
         title: "Generation failed",
-        description: "Please try again with different parameters.",
+        description: "Could not generate content. Please try again.",
         variant: "destructive"
       });
     } finally {
@@ -321,8 +330,17 @@ What's your take on this trend?
     }
 
     try {
-      // Simulate publishing
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      const payload = {
+          content,
+          platforms: selectedPlatforms,
+          scheduledAt: isScheduled && scheduledDate ? scheduledDate.toISOString() : null,
+          scheduledTime: isScheduled ? scheduledTime : null,
+          attachments: attachments.map(f => f.name), // In a real app, we'd upload these first and send IDs/URLs
+          pollOptions: showPoll ? pollOptions.filter(o => o.trim()) : [],
+          links: addedLinks
+      };
+
+      await api.post('/posts/submit', payload);
       
       if (isScheduled && scheduledDate) {
         toast({
@@ -344,9 +362,10 @@ What's your take on this trend?
       localStorage.removeItem('post_draft');
       
     } catch (error) {
+      console.error("Publishing error:", error);
       toast({
         title: "Publishing failed",
-        description: "Please try again or save as draft",
+        description: "Could not publish post. Please try again.",
         variant: "destructive"
       });
     }

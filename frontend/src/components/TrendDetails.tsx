@@ -1,20 +1,20 @@
-import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Separator } from '@/components/ui/separator';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Progress } from '@/components/ui/progress';
-import { Slider } from '@/components/ui/slider';
-import { Calendar } from '@/components/ui/calendar';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { useToast } from '@/hooks/use-toast';
-import { cn } from '@/lib/utils';
-import { format } from 'date-fns';
+import { useState, useEffect } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Separator } from "@/components/ui/separator";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Progress } from "@/components/ui/progress";
+import { Slider } from "@/components/ui/slider";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { useToast } from "@/hooks/use-toast";
+import { cn } from "@/lib/utils";
+import { format } from "date-fns";
 import {
   ArrowLeft,
   TrendingUp,
@@ -57,8 +57,10 @@ import {
   MoreHorizontal,
   Bookmark,
   BookmarkCheck
-} from 'lucide-react';
-import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Area, AreaChart, ScatterChart, Scatter } from 'recharts';
+} from "lucide-react";
+import { LineChart as RechartsLineChart, Line, BarChart, Bar, PieChart as RechartsPieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Area, AreaChart, ScatterChart, Scatter } from "recharts";
+import api from "@/lib/api";
+import { useQuery } from "@tanstack/react-query";
 
 interface TrendDetail {
   id: string;
@@ -106,7 +108,6 @@ const TrendDetails = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   
-  const [trendDetail, setTrendDetail] = useState<TrendDetail | null>(null);
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [selectedDateRange, setSelectedDateRange] = useState<Date>();
   const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>(['all']);
@@ -119,22 +120,14 @@ const TrendDetails = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [expandedSections, setExpandedSections] = useState<string[]>(['analytics', 'content']);
 
-  // Mock data
-  const mockTrendDetail: TrendDetail = {
-    id: '1',
-    hashtag: '#AIRevolution',
-    title: 'AI Revolution in Healthcare',
-    popularity: 95,
-    ranking: 1,
-    growth: 12.5,
-    platforms: ['Twitter', 'LinkedIn', 'Reddit'],
-    sentiment: 'positive',
-    totalMentions: 45672,
-    peakTime: '2 hours ago',
-    description: 'A trending discussion about artificial intelligence transforming healthcare industry with breakthrough innovations.',
-    lifecycle: 'trending',
-    predictedDirection: 'up'
-  };
+  // Fetch Trend Details
+  const { data: trendDetail, isLoading } = useQuery({
+    queryKey: ['trend', trendId],
+    queryFn: async () => {
+      const response = await api.get(`/trends/${trendId}`);
+      return response.data;
+    }
+  });
 
   const trendEvolutionData = [
     { time: '00:00', mentions: 120, sentiment: 65, engagement: 1200 },
@@ -238,70 +231,44 @@ const TrendDetails = () => {
     { name: '#AIinMedicine', similarity: 92, period: '3 months ago' }
   ];
 
-  useEffect(() => {
-    // Simulate loading trend details
-    setTrendDetail(mockTrendDetail);
-  }, [trendId]);
-
   const handleGenerateAIContent = async () => {
     setIsGenerating(true);
     try {
       await new Promise(resolve => setTimeout(resolve, 2000));
       
       const styles = {
-        summary: `📊 TREND ANALYSIS: ${mockTrendDetail.hashtag}
+        summary: `📊 TREND ANALYSIS: ${trendDetail.topic}
 
-Current Status: ${mockTrendDetail.totalMentions.toLocaleString()} mentions (+${mockTrendDetail.growth}%)
-Sentiment: ${mockTrendDetail.sentiment.toUpperCase()}
-Peak Activity: ${mockTrendDetail.peakTime}
+Current Status: ${trendDetail.postCount} posts
+Velocity: ${trendDetail.velocity}
 
 Key Insights:
-• Breakthrough AI diagnostics showing 99.7% accuracy
-• Major healthcare institutions adopting AI solutions
-• Growing discussion around ethical implications
+• Strong momentum in discussions
+• High level of engagement from community
 
-This trend shows strong momentum across ${mockTrendDetail.platforms.join(', ')} with sustained growth expected.`,
+This trend shows strong potential.`,
 
-        engaging: `🚀 The ${mockTrendDetail.hashtag} is absolutely EXPLODING right now! 
+        engaging: `🚀 The ${trendDetail.topic} is trending right now! 
 
-Here's what's got everyone talking:
-✨ AI systems detecting diseases faster than ever
-🏥 Hospitals worldwide embracing this technology  
-💡 Game-changing innovations saving lives daily
+Everyone is talking about it.
+Based on ${trendDetail.subreddit} discussions.
 
-With ${mockTrendDetail.totalMentions.toLocaleString()} mentions and climbing, this isn't just a trend - it's a revolution! 
+What's your take? 👇 #TrendPulse`,
 
-What's your take on AI transforming healthcare? 👇
+        news: `BREAKING: ${trendDetail.topic} Gains Traction on Reddit
 
-#Innovation #FutureOfMedicine #TechForGood`,
+Subreddit: r/${trendDetail.subreddit}
+Current Score: ${trendDetail.score}
 
-        news: `BREAKING: ${mockTrendDetail.hashtag} Gains Massive Traction
+The discussion is heating up with meaningful community engagement.`,
 
-The healthcare AI revolution continues to dominate social media conversations, with mentions surging ${mockTrendDetail.growth}% in the past 24 hours.
+        casual: `Have you seen what's going on with ${trendDetail.topic}? 🤯
 
-KEY DEVELOPMENTS:
-- Major medical institutions report successful AI implementation
-- New diagnostic tools showing unprecedented accuracy rates
-- Industry leaders calling for standardized AI ethics guidelines
-
-The trend spans multiple platforms including ${mockTrendDetail.platforms.join(', ')}, indicating broad industry and public interest.
-
-Current metrics: ${mockTrendDetail.totalMentions.toLocaleString()} total mentions, ${mockTrendDetail.sentiment} sentiment majority.`,
-
-        casual: `Okay, can we talk about how INSANE the ${mockTrendDetail.hashtag} trend is right now? 🤯
-
-Like, we're literally watching the future of healthcare unfold in real-time. AI is out here diagnosing diseases better than humans, and everyone's (rightfully) losing their minds about it.
-
-The numbers are wild:
-• ${mockTrendDetail.totalMentions.toLocaleString()} people talking about it
-• Growing by ${mockTrendDetail.growth}% daily
-• Trending across ${mockTrendDetail.platforms.length} major platforms
-
-Honestly, this feels like one of those moments we'll look back on and be like "yep, that's when everything changed."
-
-Anyone else following this? What do you think? 🤔`
+It's blowing up on r/${trendDetail.subreddit} right now.
+People are really into it!`
       };
 
+      // @ts-ignore
       setGeneratedContent(styles[contentStyle as keyof typeof styles] || styles.engaging);
       
       toast({
@@ -361,609 +328,318 @@ Anyone else following this? What do you think? 🤔`
     );
   };
 
-  const getLifecycleColor = (lifecycle: string) => {
-    switch (lifecycle) {
-      case 'emerging': return 'text-blue-500';
-      case 'trending': return 'text-green-500';
-      case 'peak': return 'text-orange-500';
-      case 'declining': return 'text-red-500';
-      default: return 'text-gray-500';
-    }
-  };
-
-  const getLifecycleIcon = (lifecycle: string) => {
-    switch (lifecycle) {
-      case 'emerging': return <TrendingUp className="w-4 h-4" />;
-      case 'trending': return <Flame className="w-4 h-4" />;
-      case 'peak': return <Award className="w-4 h-4" />;
-      case 'declining': return <TrendingDown className="w-4 h-4" />;
-      default: return <Activity className="w-4 h-4" />;
-    }
-  };
-
-  if (!trendDetail) {
+  if (isLoading) {
     return (
       <div className="min-h-screen gradient-dashboard p-6">
         <div className="max-w-7xl mx-auto">
           <div className="animate-pulse space-y-6">
             <div className="h-8 bg-muted rounded w-1/3"></div>
             <div className="h-32 bg-muted rounded"></div>
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              <div className="lg:col-span-2 space-y-6">
-                <div className="h-64 bg-muted rounded"></div>
-                <div className="h-96 bg-muted rounded"></div>
-              </div>
-              <div className="space-y-6">
-                <div className="h-48 bg-muted rounded"></div>
-                <div className="h-64 bg-muted rounded"></div>
-              </div>
-            </div>
+             <div className="h-64 bg-muted rounded"></div>
           </div>
         </div>
       </div>
     );
   }
 
+  if (!trendDetail) {
+    return (
+        <div className="min-h-screen gradient-dashboard p-6 flex flex-col items-center justify-center">
+            <h2 className="text-2xl font-bold text-white mb-4">Trend not found</h2>
+            <Button onClick={() => navigate('/dashboard')}>Back to Dashboard</Button>
+        </div>
+    );
+  }
+
+  const getLifecycleColor = (lifecycle: string) => {
+    switch(lifecycle) {
+      case 'emerging': return 'bg-blue-500/20 text-blue-400 border-blue-500/50';
+      case 'trending': return 'bg-green-500/20 text-green-400 border-green-500/50';
+      case 'peak': return 'bg-purple-500/20 text-purple-400 border-purple-500/50';
+      case 'declining': return 'bg-orange-500/20 text-orange-400 border-orange-500/50';
+      default: return 'bg-gray-500/20 text-gray-400 border-gray-500/50';
+    }
+  };
+
   return (
     <div className="min-h-screen gradient-dashboard p-6">
       <div className="max-w-7xl mx-auto space-y-6">
-        {/* Breadcrumb Navigation */}
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+        {/* Header Navigation */}
+        <div className="flex items-center justify-between">
           <Button 
             variant="ghost" 
-            size="sm" 
+            className="text-muted-foreground hover:text-foreground"
             onClick={() => navigate('/dashboard')}
-            className="p-0 h-auto font-normal"
           >
-            Dashboard
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Back to Dashboard
           </Button>
-          <span>/</span>
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            onClick={() => navigate('/trends')}
-            className="p-0 h-auto font-normal"
-          >
-            Trends
-          </Button>
-          <span>/</span>
-          <span className="text-foreground">{trendDetail.hashtag}</span>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={handleShareTrend}>
+              <Share className="mr-2 h-4 w-4" />
+              Share
+            </Button>
+            <Button variant="outline" size="sm" onClick={handleExportReport}>
+              <Download className="mr-2 h-4 w-4" />
+              Export Report
+            </Button>
+          </div>
         </div>
 
-        {/* Trend Header */}
-        <Card className="gradient-card border-border shadow-card">
-          <CardContent className="p-6">
-            <div className="flex items-start justify-between">
-              <div className="flex-1">
-                <div className="flex items-center gap-3 mb-2">
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    onClick={() => navigate('/dashboard')}
-                    className="p-2"
-                  >
-                    <ArrowLeft className="w-4 h-4" />
-                  </Button>
-                  <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-primary-glow bg-clip-text text-transparent">
-                    {trendDetail.hashtag}
-                  </h1>
-                  <Badge variant="outline" className="text-lg px-3 py-1">
-                    #{trendDetail.ranking}
+        {/* Main Trend Header */}
+        <Card className="glass-card border-none text-card-foreground">
+          <CardHeader className="pb-4">
+            <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+              <div className="space-y-2">
+                <div className="flex items-center gap-3">
+                  <h1 className="text-3xl font-bold tracking-tight">{trendDetail.topic}</h1>
+                    {/* Using mock values via OR for missing fields or assuming default */}
+                  <Badge variant="outline" className={cn("capitalize px-3 py-1", getLifecycleColor('trending'))}> 
+                    <TrendingUp className="mr-1.5 h-3.5 w-3.5" />
+                    Trending
                   </Badge>
                 </div>
-                
-                <p className="text-lg text-muted-foreground mb-4">{trendDetail.title}</p>
-                <p className="text-muted-foreground mb-4">{trendDetail.description}</p>
-                
-                <div className="flex flex-wrap items-center gap-4">
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-medium">Popularity:</span>
-                    <div className="flex items-center gap-2">
-                      <Progress value={trendDetail.popularity} className="w-20" />
-                      <span className="text-sm font-bold">{trendDetail.popularity}%</span>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-medium">Growth:</span>
-                    <div className={`flex items-center gap-1 ${trendDetail.growth >= 0 ? 'text-sentiment-positive' : 'text-sentiment-negative'}`}>
-                      {trendDetail.growth >= 0 ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}
-                      <span className="font-bold">{Math.abs(trendDetail.growth).toFixed(1)}%</span>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-medium">Lifecycle:</span>
-                    <div className={`flex items-center gap-1 ${getLifecycleColor(trendDetail.lifecycle)}`}>
-                      {getLifecycleIcon(trendDetail.lifecycle)}
-                      <span className="font-medium capitalize">{trendDetail.lifecycle}</span>
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="flex flex-wrap gap-2 mt-4">
-                  {trendDetail.platforms.map(platform => (
-                    <Badge key={platform} variant="secondary">
-                      {platform}
-                    </Badge>
-                  ))}
+                <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                  <span className="flex items-center">
+                    <Hash className="mr-1 h-3.5 w-3.5" />
+                    {trendDetail.subreddit}
+                  </span>
+                  <span className="flex items-center">
+                    <Activity className="mr-1 h-3.5 w-3.5" />
+                    Score: {trendDetail.score}
+                  </span>
+                  <span className="flex items-center">
+                    <Clock className="mr-1 h-3.5 w-3.5" />
+                    Found {new Date(trendDetail.timestamp).toLocaleDateString()}
+                  </span>
                 </div>
               </div>
-              
               <div className="flex items-center gap-2">
-                <Button variant="outline" onClick={handleBookmark}>
-                  {isBookmarked ? <BookmarkCheck className="w-4 h-4" /> : <Bookmark className="w-4 h-4" />}
+                 <Button 
+                  size="lg" 
+                  className={cn(
+                    "w-full md:w-auto transition-all",
+                    isBookmarked ? "bg-yellow-500/20 text-yellow-500 hover:bg-yellow-500/30" : ""
+                  )}
+                  variant={isBookmarked ? "secondary" : "default"}
+                  onClick={handleBookmark}
+                >
+                  {isBookmarked ? (
+                    <>
+                      <Star className="mr-2 h-4 w-4 fill-yellow-500" />
+                      Bookmarked
+                    </>
+                  ) : (
+                    <>
+                      <StarOff className="mr-2 h-4 w-4" />
+                      Bookmark Trend
+                    </>
+                  )}
                 </Button>
-                <Button variant="outline" onClick={handleShareTrend}>
-                  <Share className="w-4 h-4" />
+                <Button size="lg" className="premium-button shadow-lg shadow-primary/20" onClick={() => {
+                   document.getElementById('content-generator')?.scrollIntoView({ behavior: 'smooth' });
+                   if (!generatedContent) handleGenerateAIContent();
+                }}>
+                  <Sparkles className="mr-2 h-4 w-4" />
+                  Generate Content
                 </Button>
-                <Button variant="outline" onClick={handleExportReport}>
-                  <Download className="w-4 h-4" />
-                </Button>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <p className="text-lg text-muted-foreground leading-relaxed max-w-4xl">
+              {trendDetail.title || "Trending discussion detected on Reddit."}
+            </p>
+            
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-8">
+              <div className="p-4 rounded-lg bg-background/40 border border-border/50 backdrop-blur-sm">
+                <div className="text-sm font-medium text-muted-foreground mb-1">Total Mentions</div>
+                <div className="text-2xl font-bold flex items-center gap-2">
+                  {trendDetail.postCount || 0}
+                  <Badge className="bg-green-500/20 text-green-500 border-none text-xs">+12.5%</Badge>
+                </div>
+              </div>
+              <div className="p-4 rounded-lg bg-background/40 border border-border/50 backdrop-blur-sm">
+                <div className="text-sm font-medium text-muted-foreground mb-1">Sentiment</div>
+                <div className="text-2xl font-bold capitalize text-green-500">
+                    {trendDetail.status || 'Active'}
+                </div>
+              </div>
+              <div className="p-4 rounded-lg bg-background/40 border border-border/50 backdrop-blur-sm">
+                <div className="text-sm font-medium text-muted-foreground mb-1">Velocity</div>
+                <div className="text-2xl font-bold">{trendDetail.velocity || 0}/hr</div>
+              </div>
+               <div className="p-4 rounded-lg bg-background/40 border border-border/50 backdrop-blur-sm">
+                <div className="text-sm font-medium text-muted-foreground mb-1">Predicted Growth</div>
+                 <div className="text-2xl font-bold flex items-center gap-1 text-green-500">
+                   <TrendingUp className="h-4 w-4" />
+                   High
+                 </div>
               </div>
             </div>
           </CardContent>
         </Card>
 
+        {/* Content Generator */}
+         <div id="content-generator" className="glass-card rounded-xl border-none p-6">
+            <div className="flex items-center justify-between mb-6">
+                <div className="space-y-1">
+                    <h2 className="text-xl font-semibold flex items-center gap-2">
+                        <Sparkles className="h-5 w-5 text-purple-500" />
+                        AI Content Generator
+                    </h2>
+                    <p className="text-sm text-muted-foreground">Draft high-engagement posts based on this trend</p>
+                </div>
+                 <Select value={contentStyle} onValueChange={setContentStyle}>
+                    <SelectTrigger className="w-[180px]">
+                        <SelectValue placeholder="Select style" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="summary">Analytical Summary</SelectItem>
+                        <SelectItem value="engaging">Viral / Engaging</SelectItem>
+                        <SelectItem value="news">News / Journalistic</SelectItem>
+                        <SelectItem value="casual">Casual / Conversational</SelectItem>
+                    </SelectContent>
+                </Select>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                 <div className="space-y-4">
+                     <div className="p-4 rounded-lg bg-background/50 border border-border/50 min-h-[200px] relative group">
+                        {isGenerating ? (
+                             <div className="absolute inset-0 flex flex-col items-center justify-center bg-background/80 backdrop-blur-sm z-10 rounded-lg">
+                                <Sparkles className="h-8 w-8 text-purple-500 animate-spin mb-2" />
+                                <span className="text-sm font-medium animate-pulse">Generating magic...</span>
+                             </div>
+                        ) : null}
+                         
+                        {generatedContent ? (
+                            <div className="whitespace-pre-wrap font-mono text-sm leading-relaxed">
+                                {generatedContent}
+                            </div>
+                        ) : (
+                            <div className="h-full flex flex-col items-center justify-center text-muted-foreground space-y-2 opacity-70">
+                                <Sparkles className="h-8 w-8" />
+                                <p>Select a style and click generate</p>
+                            </div>
+                        )}
+                        
+                        {generatedContent && (
+                             <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity flex gap-2">
+                                <Button size="icon" variant="ghost" className="h-8 w-8 bg-background/80 backdrop-blur shadow-sm" onClick={handleCopyContent}>
+                                    <Copy className="h-4 w-4" />
+                                </Button>
+                             </div>
+                        )}
+                     </div>
+                     
+                     <div className="flex gap-3">
+                        <Button 
+                            className="flex-1 premium-button" 
+                            onClick={handleGenerateAIContent}
+                            disabled={isGenerating}
+                        >
+                             <Sparkles className="mr-2 h-4 w-4" />
+                             {generatedContent ? "Regenerate Content" : "Generate Draft"}
+                        </Button>
+                         {generatedContent && (
+                            <Button variant="secondary" className="flex-1">
+                                <Share className="mr-2 h-4 w-4" />
+                                Schedule Post
+                            </Button>
+                        )}
+                     </div>
+                 </div>
+                 
+                 <div className="space-y-4">
+                    <h3 className="text-sm font-medium text-muted-foreground mb-2">Platform Preview</h3>
+                     <Tabs defaultValue="twitter">
+                        <TabsList className="w-full grid grid-cols-3">
+                            <TabsTrigger value="twitter">Twitter</TabsTrigger>
+                            <TabsTrigger value="linkedin">LinkedIn</TabsTrigger>
+                            <TabsTrigger value="reddit">Reddit</TabsTrigger>
+                        </TabsList>
+                        <TabsContent value="twitter" className="mt-4">
+                             <div className="p-4 rounded-xl border border-border/40 bg-black/40 backdrop-blur-sm">
+                                <div className="flex gap-3">
+                                    <div className="h-10 w-10 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center font-bold text-white">
+                                        K
+                                    </div>
+                                    <div className="space-y-1.5 flex-1">
+                                         <div className="flex items-center gap-2">
+                                            <span className="font-bold">Kavya</span>
+                                            <span className="text-sm text-muted-foreground">@kavya_trends</span>
+                                         </div>
+                                         <p className="text-[15px] leading-normal">
+                                            {generatedContent || "Your AI-generated tweet will appear here..."}
+                                         </p>
+                                         {generatedContent && <p className="text-blue-400 text-[15px] mt-1">#TrendPulse #{trendDetail.topic.replace(/\s+/g, '')}</p>}
+                                    </div>
+                                </div>
+                             </div>
+                        </TabsContent>
+                         {/* Add other tab contents if needed */}
+                     </Tabs>
+                 </div>
+            </div>
+         </div>
+        
+        {/* Analytics Section */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Main Content */}
-          <div className="lg:col-span-2 space-y-6">
-            {/* AI Content Generation */}
-            <Card className="gradient-card border-border shadow-card">
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <CardTitle className="flex items-center gap-2">
-                    <Sparkles className="w-5 h-5" />
-                    AI Content Generation
-                  </CardTitle>
-                  <Button 
-                    onClick={() => toggleSection('content')}
-                    variant="ghost" 
-                    size="sm"
-                  >
-                    {expandedSections.includes('content') ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                  </Button>
-                </div>
-              </CardHeader>
-              {expandedSections.includes('content') && (
-                <CardContent className="space-y-4">
-                  <div className="flex gap-4">
-                    <Select value={contentStyle} onValueChange={setContentStyle}>
-                      <SelectTrigger className="w-[200px]">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="summary">Summary</SelectItem>
-                        <SelectItem value="engaging">Engaging</SelectItem>
-                        <SelectItem value="news">News-style</SelectItem>
-                        <SelectItem value="casual">Casual</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    
-                    <Button 
-                      onClick={handleGenerateAIContent}
-                      disabled={isGenerating}
-                      className="bg-primary hover:bg-primary/90"
-                    >
-                      {isGenerating ? (
-                        <RefreshCw className="w-4 h-4 animate-spin mr-2" />
-                      ) : (
-                        <Sparkles className="w-4 h-4 mr-2" />
-                      )}
-                      {isGenerating ? 'Generating...' : 'Generate AI Post'}
-                    </Button>
-                  </div>
-                  
-                  {generatedContent && (
-                    <div className="space-y-3">
-                      <div className="bg-muted/20 p-4 rounded-lg">
-                        <pre className="whitespace-pre-wrap text-sm font-mono">{generatedContent}</pre>
-                      </div>
-                      <div className="flex gap-2">
-                        <Button variant="outline" size="sm" onClick={handleCopyContent}>
-                          <Copy className="w-4 h-4 mr-2" />
-                          Copy
-                        </Button>
-                        <Button variant="outline" size="sm" onClick={handleGenerateAIContent}>
-                          <RefreshCw className="w-4 h-4 mr-2" />
-                          Regenerate
-                        </Button>
-                        <Button variant="outline" size="sm">
-                          <FileText className="w-4 h-4 mr-2" />
-                          Save Draft
-                        </Button>
-                      </div>
-                      <div className="text-xs text-muted-foreground">
-                        Character count: {generatedContent.length} | Optimized for: {trendDetail.platforms.join(', ')}
-                      </div>
-                    </div>
-                  )}
-                </CardContent>
-              )}
-            </Card>
-
-            {/* Detailed Analytics */}
-            <Card className="gradient-card border-border shadow-card">
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <CardTitle className="flex items-center gap-2">
-                    <BarChart3 className="w-5 h-5" />
-                    Detailed Analytics
-                  </CardTitle>
-                  <Button 
-                    onClick={() => toggleSection('analytics')}
-                    variant="ghost" 
-                    size="sm"
-                  >
-                    {expandedSections.includes('analytics') ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                  </Button>
-                </div>
-              </CardHeader>
-              {expandedSections.includes('analytics') && (
-                <CardContent>
-                  <Tabs defaultValue="evolution" className="w-full">
-                    <TabsList className="grid w-full grid-cols-4">
-                      <TabsTrigger value="evolution">Evolution</TabsTrigger>
-                      <TabsTrigger value="geographic">Geographic</TabsTrigger>
-                      <TabsTrigger value="heatmap">Heatmap</TabsTrigger>
-                      <TabsTrigger value="sentiment">Sentiment</TabsTrigger>
-                    </TabsList>
-                    
-                    <TabsContent value="evolution" className="mt-6">
-                      <div className="space-y-4">
-                        <h4 className="font-medium">Trend Evolution Over Time</h4>
-                        <ResponsiveContainer width="100%" height={300}>
-                          <LineChart data={trendEvolutionData}>
-                            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                            <XAxis dataKey="time" stroke="hsl(var(--muted-foreground))" />
-                            <YAxis stroke="hsl(var(--muted-foreground))" />
-                            <Tooltip 
-                              contentStyle={{ 
-                                backgroundColor: 'hsl(var(--card))', 
-                                border: '1px solid hsl(var(--border))',
-                                borderRadius: '8px'
-                              }} 
-                            />
-                            <Legend />
-                            <Line 
-                              type="monotone" 
-                              dataKey="mentions" 
-                              stroke="hsl(var(--primary))" 
-                              strokeWidth={2}
-                              name="Mentions"
-                            />
-                            <Line 
-                              type="monotone" 
-                              dataKey="engagement" 
-                              stroke="hsl(var(--chart-secondary))" 
-                              strokeWidth={2}
-                              name="Engagement"
-                            />
-                          </LineChart>
-                        </ResponsiveContainer>
-                      </div>
-                    </TabsContent>
-                    
-                    <TabsContent value="geographic" className="mt-6">
-                      <div className="space-y-4">
-                        <h4 className="font-medium">Geographic Distribution</h4>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                          <ResponsiveContainer width="100%" height={250}>
-                            <PieChart>
-                              <Pie
-                                data={geographicData}
-                                cx="50%"
-                                cy="50%"
-                                innerRadius={40}
-                                outerRadius={100}
-                                paddingAngle={5}
-                                dataKey="mentions"
-                              >
-                                {geographicData.map((entry, index) => (
-                                  <Cell key={`cell-${index}`} fill={`hsl(var(--chart-${['primary', 'secondary', 'tertiary', 'quaternary'][index % 4]}))`} />
-                                ))}
-                              </Pie>
-                              <Tooltip />
-                            </PieChart>
-                          </ResponsiveContainer>
-                          <div className="space-y-3">
-                            {geographicData.map((region, index) => (
-                              <div key={region.region} className="flex items-center justify-between">
-                                <div className="flex items-center gap-2">
-                                  <div 
-                                    className="w-3 h-3 rounded-full" 
-                                    style={{ backgroundColor: `hsl(var(--chart-${['primary', 'secondary', 'tertiary', 'quaternary'][index % 4]}))` }}
-                                  ></div>
-                                  <span className="text-sm">{region.region}</span>
-                                </div>
-                                <div className="text-right">
-                                  <div className="text-sm font-medium">{region.mentions.toLocaleString()}</div>
-                                  <div className="text-xs text-muted-foreground">{region.percentage}%</div>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-                    </TabsContent>
-                    
-                    <TabsContent value="heatmap" className="mt-6">
-                      <div className="space-y-4">
-                        <h4 className="font-medium">Hourly Activity Heatmap</h4>
-                        <div className="grid grid-cols-24 gap-1">
-                          {hourlyHeatmapData.map((item, index) => (
-                            <div
-                              key={index}
-                              className="aspect-square rounded-sm flex items-center justify-center text-xs"
-                              style={{
-                                backgroundColor: `hsl(var(--primary) / ${item.value / 60})`,
-                                color: item.value > 30 ? 'white' : 'hsl(var(--foreground))'
-                              }}
-                              title={`${item.hour}:00 - ${item.value} mentions`}
-                            >
-                              {item.hour}
-                            </div>
-                          ))}
-                        </div>
-                        <div className="flex items-center justify-between text-xs text-muted-foreground">
-                          <span>12 AM</span>
-                          <span>6 AM</span>
-                          <span>12 PM</span>
-                          <span>6 PM</span>
-                          <span>11 PM</span>
-                        </div>
-                      </div>
-                    </TabsContent>
-                    
-                    <TabsContent value="sentiment" className="mt-6">
-                      <div className="space-y-4">
-                        <h4 className="font-medium">Sentiment Analysis Timeline</h4>
-                        <ResponsiveContainer width="100%" height={300}>
-                          <AreaChart data={trendEvolutionData}>
-                            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                            <XAxis dataKey="time" stroke="hsl(var(--muted-foreground))" />
-                            <YAxis stroke="hsl(var(--muted-foreground))" />
-                            <Tooltip 
-                              contentStyle={{ 
-                                backgroundColor: 'hsl(var(--card))', 
-                                border: '1px solid hsl(var(--border))',
-                                borderRadius: '8px'
-                              }} 
-                            />
-                            <Area 
-                              type="monotone" 
-                              dataKey="sentiment" 
-                              stroke="hsl(var(--sentiment-positive))" 
-                              fill="hsl(var(--sentiment-positive))" 
-                              fillOpacity={0.3}
-                              name="Sentiment Score"
-                            />
-                          </AreaChart>
-                        </ResponsiveContainer>
-                      </div>
-                    </TabsContent>
-                  </Tabs>
-                </CardContent>
-              )}
-            </Card>
-
-            {/* Related Content Explorer */}
-            <Card className="gradient-card border-border shadow-card">
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <CardTitle className="flex items-center gap-2">
-                    <MessageSquare className="w-5 h-5" />
-                    Related Content
-                  </CardTitle>
-                  <div className="flex items-center gap-2">
-                    <Select value={sortBy} onValueChange={setSortBy}>
-                      <SelectTrigger className="w-[140px]">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="recent">Most Recent</SelectItem>
-                        <SelectItem value="popular">Most Popular</SelectItem>
-                        <SelectItem value="engagement">Highest Engagement</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={() => setViewMode(viewMode === 'list' ? 'grid' : 'list')}
-                    >
-                      {viewMode === 'list' ? <BarChart3 className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                    </Button>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <ScrollArea className="h-[500px]">
-                  <div className={viewMode === 'grid' ? 'grid grid-cols-1 md:grid-cols-2 gap-4' : 'space-y-4'}>
-                    {relatedPosts.map((post) => (
-                      <div key={post.id} className="p-4 border rounded-lg hover:bg-muted/20 transition-colors">
-                        <div className="flex items-start justify-between mb-3">
-                          <div className="flex items-center gap-2">
-                            <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-                              <span className="text-xs font-medium">{post.author.split(' ').map(n => n[0]).join('')}</span>
-                            </div>
-                            <div>
-                              <div className="flex items-center gap-2">
-                                <span className="font-medium text-sm">{post.author}</span>
-                                {post.verified && <CheckCircle className="w-3 h-3 text-blue-500" />}
-                              </div>
-                              <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                <Badge variant="outline" className="text-xs">{post.platform}</Badge>
-                                <span>{post.timestamp}</span>
-                              </div>
-                            </div>
-                          </div>
-                          <Button variant="ghost" size="sm">
-                            <ExternalLink className="w-3 h-3" />
-                          </Button>
-                        </div>
-                        
-                        <p className="text-sm mb-3 line-clamp-3">{post.content}</p>
-                        
-                        <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                          <div className="flex items-center gap-1">
-                            <Heart className="w-3 h-3" />
-                            <span>{post.engagement.likes.toLocaleString()}</span>
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <Repeat className="w-3 h-3" />
-                            <span>{post.engagement.shares.toLocaleString()}</span>
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <MessageSquare className="w-3 h-3" />
-                            <span>{post.engagement.comments.toLocaleString()}</span>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </ScrollArea>
+           <Card className="col-span-1 lg:col-span-2 glass-card border-none">
+             <CardHeader>
+               <CardTitle>Trend Evolution</CardTitle>
+               <CardDescription>Mentions and sentiment over the last 24h</CardDescription>
+             </CardHeader>
+             <CardContent className="h-[300px]">
+               <ResponsiveContainer width="100%" height="100%">
+                 <AreaChart data={trendEvolutionData}>
+                   <defs>
+                     <linearGradient id="colorMentions" x1="0" y1="0" x2="0" y2="1">
+                       <stop offset="5%" stopColor="#8884d8" stopOpacity={0.8}/>
+                       <stop offset="95%" stopColor="#8884d8" stopOpacity={0}/>
+                     </linearGradient>
+                   </defs>
+                   <CartesianGrid strokeDasharray="3 3" stroke="#333" vertical={false} />
+                   <XAxis dataKey="time" stroke="#666" fontSize={12} tickLine={false} axisLine={false} />
+                   <YAxis stroke="#666" fontSize={12} tickLine={false} axisLine={false} />
+                   <Tooltip 
+                     contentStyle={{ backgroundColor: '#1a1a1a', border: '1px solid #333', borderRadius: '8px' }}
+                     itemStyle={{ color: '#fff' }}
+                   />
+                   <Area type="monotone" dataKey="mentions" stroke="#8884d8" fillOpacity={1} fill="url(#colorMentions)" strokeWidth={2} />
+                 </AreaChart>
+               </ResponsiveContainer>
+             </CardContent>
+           </Card>
+           
+           <Card className="glass-card border-none">
+             <CardHeader>
+                <CardTitle>Demographics</CardTitle>
+                <CardDescription>Audience distribution</CardDescription>
+             </CardHeader>
+              <CardContent className="h-[300px] flex items-center justify-center">
+                 <ResponsiveContainer width="100%" height="100%">
+                    <RechartsPieChart>
+                      <Pie
+                        data={geographicData}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={60}
+                        outerRadius={80}
+                        paddingAngle={5}
+                        dataKey="percentage"
+                      >
+                        {geographicData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={['#8884d8', '#82ca9d', '#ffc658', '#ff8042', '#a4de6c'][index % 5]} />
+                        ))}
+                      </Pie>
+                      <Tooltip contentStyle={{ backgroundColor: '#1a1a1a', border: 'none', borderRadius: '8px' }} />
+                      <Legend />
+                    </RechartsPieChart>
+                 </ResponsiveContainer>
               </CardContent>
-            </Card>
-          </div>
-
-          {/* Sidebar */}
-          <div className="space-y-6">
-            {/* Quick Stats */}
-            <Card className="gradient-card border-border shadow-card">
-              <CardHeader>
-                <CardTitle className="text-lg">Quick Stats</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-muted-foreground">Total Mentions</span>
-                  <span className="font-bold">{trendDetail.totalMentions.toLocaleString()}</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-muted-foreground">Peak Activity</span>
-                  <span className="font-bold">{trendDetail.peakTime}</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-muted-foreground">Sentiment</span>
-                  <Badge variant={trendDetail.sentiment === 'positive' ? 'default' : trendDetail.sentiment === 'negative' ? 'destructive' : 'secondary'}>
-                    {trendDetail.sentiment}
-                  </Badge>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-muted-foreground">Predicted Direction</span>
-                  <div className={`flex items-center gap-1 ${trendDetail.predictedDirection === 'up' ? 'text-sentiment-positive' : trendDetail.predictedDirection === 'down' ? 'text-sentiment-negative' : 'text-muted-foreground'}`}>
-                    {trendDetail.predictedDirection === 'up' ? <TrendingUp className="w-4 h-4" /> : 
-                     trendDetail.predictedDirection === 'down' ? <TrendingDown className="w-4 h-4" /> : 
-                     <Activity className="w-4 h-4" />}
-                    <span className="capitalize font-medium">{trendDetail.predictedDirection}</span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Top Influencers */}
-            <Card className="gradient-card border-border shadow-card">
-              <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <Users className="w-5 h-5" />
-                  Top Influencers
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {topInfluencers.map((influencer) => (
-                    <div key={influencer.id} className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                          <span className="text-sm font-medium">{influencer.avatar}</span>
-                        </div>
-                        <div>
-                          <div className="font-medium text-sm">{influencer.name}</div>
-                          <div className="text-xs text-muted-foreground">{influencer.handle}</div>
-                          <div className="text-xs text-muted-foreground">
-                            {influencer.followers.toLocaleString()} followers
-                          </div>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <div className="text-sm font-medium">{influencer.posts}</div>
-                        <div className="text-xs text-muted-foreground">posts</div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Related Hashtags */}
-            <Card className="gradient-card border-border shadow-card">
-              <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <Hash className="w-5 h-5" />
-                  Related Hashtags
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex flex-wrap gap-2">
-                  {relatedHashtags.map((hashtag) => (
-                    <Badge key={hashtag} variant="outline" className="cursor-pointer hover:bg-primary hover:text-primary-foreground">
-                      {hashtag}
-                    </Badge>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Similar Past Trends */}
-            <Card className="gradient-card border-border shadow-card">
-              <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <Clock className="w-5 h-5" />
-                  Similar Past Trends
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {similarTrends.map((trend) => (
-                    <div key={trend.name} className="flex items-center justify-between p-2 hover:bg-muted/20 rounded cursor-pointer">
-                      <div>
-                        <div className="font-medium text-sm">{trend.name}</div>
-                        <div className="text-xs text-muted-foreground">{trend.period}</div>
-                      </div>
-                      <div className="text-right">
-                        <div className="text-sm font-medium">{trend.similarity}%</div>
-                        <div className="text-xs text-muted-foreground">similarity</div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Quick Actions */}
-            <Card className="gradient-card border-border shadow-card">
-              <CardHeader>
-                <CardTitle className="text-lg">Quick Actions</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <Button variant="outline" className="w-full justify-start">
-                  <Bell className="w-4 h-4 mr-2" />
-                  Set Alert
-                </Button>
-                <Button variant="outline" className="w-full justify-start">
-                  <Code className="w-4 h-4 mr-2" />
-                  Embed Widget
-                </Button>
-                <Button variant="outline" className="w-full justify-start">
-                  <Mail className="w-4 h-4 mr-2" />
-                  Email Report
-                </Button>
-                <Button variant="outline" className="w-full justify-start">
-                  <Target className="w-4 h-4 mr-2" />
-                  Compare Trends
-                </Button>
-              </CardContent>
-            </Card>
-          </div>
+           </Card>
         </div>
       </div>
     </div>

@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import api from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -74,43 +75,101 @@ const Settings = () => {
   const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
   const [apiKey] = useState("sk_live_abc123def456ghi789jkl012mno345pqr678");
 
-  const handleSaveProfile = () => {
-    toast({
-      title: "Profile Updated",
-      description: "Your profile information has been saved successfully.",
-    });
-  };
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const response = await api.get('/user/me');
+        const data = response.data;
+        if (data) {
+          if (data.profile) setProfile(prev => ({ ...prev, ...data.profile }));
+          if (data.notifications) setNotifications(prev => ({ ...prev, ...data.notifications }));
+          if (data.preferences) setPreferences(prev => ({ ...prev, ...data.preferences }));
+        }
+      } catch (error) {
+        console.error("Failed to fetch settings", error);
+        // Fallback to defaults or show error
+      }
+    };
+    fetchSettings();
+  }, []);
 
-  const handleChangePassword = () => {
-    if (passwords.new !== passwords.confirm) {
+  const handleSaveProfile = async () => {
+    try {
+      await api.put('/user/profile', profile);
       toast({
-        title: "Password Mismatch",
-        description: "New password and confirm password do not match.",
+        title: "Profile Updated",
+        description: "Your profile information has been saved successfully.",
+      });
+    } catch (error) {
+      toast({
+        title: "Update Failed",
+        description: "Could not update profile.",
         variant: "destructive"
       });
-      return;
     }
-    
-    toast({
-      title: "Password Changed",
-      description: "Your password has been updated successfully.",
-    });
-    
-    setPasswords({ current: "", new: "", confirm: "" });
   };
 
-  const handleSaveNotifications = () => {
-    toast({
-      title: "Notifications Updated",
-      description: "Your notification preferences have been saved.",
-    });
+  const handleChangePassword = async () => {
+    if (passwords.new !== passwords.confirm) {
+        toast({
+            title: "Password Mismatch",
+            description: "New password and confirm password do not match.",
+            variant: "destructive"
+        });
+        return;
+    }
+
+    try {
+        await api.put('/user/password', { 
+            currentPassword: passwords.current, 
+            newPassword: passwords.new 
+        });
+        
+        toast({
+            title: "Password Changed",
+            description: "Your password has been updated successfully.",
+        });
+        
+        setPasswords({ current: "", new: "", confirm: "" });
+    } catch (error) {
+        toast({
+            title: "Password Change Failed",
+            description: "Could not change password. Please check your current password.",
+            variant: "destructive"
+        });
+    }
   };
 
-  const handleSavePreferences = () => {
-    toast({
-      title: "Preferences Updated", 
-      description: "Your dashboard preferences have been saved.",
-    });
+  const handleSaveNotifications = async () => {
+    try {
+        await api.put('/user/notifications', notifications);
+        toast({
+            title: "Notifications Updated",
+            description: "Your notification preferences have been saved.",
+        });
+    } catch (error) {
+        toast({
+            title: "Update Failed",
+            description: "Could not update notification settings.",
+            variant: "destructive"
+        });
+    }
+  };
+
+  const handleSavePreferences = async () => {
+    try {
+        await api.put('/user/preferences', preferences);
+        toast({
+            title: "Preferences Updated", 
+            description: "Your dashboard preferences have been saved.",
+        });
+    } catch (error) {
+         toast({
+            title: "Update Failed",
+            description: "Could not update preferences.",
+            variant: "destructive"
+        });
+    }
   };
 
   const handleCopyApiKey = () => {
@@ -135,12 +194,23 @@ const Settings = () => {
     });
   };
 
-  const handleDeleteAccount = () => {
-    toast({
-      title: "Account Deletion Requested",
-      description: "Your account deletion request has been submitted for review.",
-      variant: "destructive"
-    });
+  const handleDeleteAccount = async () => {
+    try {
+        await api.delete('/user/account');
+        toast({
+            title: "Account Deleted",
+            description: "Your account has been deactivated.",
+            variant: "destructive"
+        });
+        // Redirect to login or home
+        window.location.href = '/login';
+    } catch (error) {
+        toast({
+            title: "Deletion Failed",
+            description: "Could not delete account. Please try again.",
+            variant: "destructive"
+        });
+    }
   };
 
   return (

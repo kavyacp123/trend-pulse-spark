@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { TrendingUp, BarChart3, Users } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import api from "@/lib/api";
 
 const Login = () => {
   const [email, setEmail] = useState("");
@@ -20,20 +21,31 @@ const Login = () => {
     setIsLoading(true);
     setError("");
 
-    // Simulate API call
-    setTimeout(() => {
-      if (email === "demo@analytics.com" && password === "demo123") {
-        localStorage.setItem("auth_token", "demo_jwt_token");
+    try {
+      const response = await api.post("/auth/login", {
+        username: email,
+        password: password,
+      });
+
+      const token = response.data.token || response.data.accessToken; 
+      
+      if (token) {
+        localStorage.setItem("auth_token", token);
         toast({
           title: "Login successful",
           description: "Welcome to Social Media Analytics Platform",
         });
         navigate("/dashboard");
       } else {
-        setError("Invalid credentials. Try demo@analytics.com / demo123");
+         setError("Login failed: No token received");
       }
+
+    } catch (err: any) {
+      console.error(err);
+      setError(err.response?.data?.message || "Invalid credentials. Please try again.");
+    } finally {
       setIsLoading(false);
-    }, 1000);
+    }
   };
 
   return (

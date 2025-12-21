@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -35,8 +35,8 @@ import {
   Share,
   Sparkles,
   Target,
-  PieChart,
-  LineChart,
+  PieChart as PieChartIcon,
+  LineChart as LineChartIcon,
   Hash,
   MapPin,
   Flame,
@@ -80,8 +80,12 @@ interface PlatformStatus {
   color: string;
 }
 
+import { useQuery } from "@tanstack/react-query";
+import api from "@/lib/api";
+
+// ... (keep existing imports)
+
 const Dashboard = () => {
-  const [trends, setTrends] = useState<TrendData[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedPlatform, setSelectedPlatform] = useState("all");
   const [selectedTimeRange, setSelectedTimeRange] = useState("24h");
@@ -90,7 +94,48 @@ const Dashboard = () => {
   const [lastUpdate, setLastUpdate] = useState(new Date());
   const { toast } = useToast();
 
-  // Mock data for charts
+  // Fetch Trends
+  const { data: trends = [], isLoading: isLoadingTrends, refetch: refetchTrends } = useQuery({
+    queryKey: ['trends'],
+    queryFn: async () => {
+      const response = await api.get('/trends/top?limit=20');
+      return response.data;
+    }
+  });
+
+  // Fetch Analytics Overview
+  const { data: analytics, isLoading: isLoadingAnalytics, refetch: refetchAnalytics } = useQuery({
+    queryKey: ['analytics-overview'],
+    queryFn: async () => {
+      // Endpoint might differ slightly based on valid backend routes, assuming /analytics/overview exists as per plan
+      const response = await api.get('/analytics/overview');
+      return response.data;
+    },
+     initialData: {
+      totalMentions: 0,
+      activePlatforms: 0,
+      aiPostsToday: 0,
+      sentimentDistribution: { positive: 0, neutral: 0, negative: 0 }
+    }
+  });
+
+  // Derived state from real data
+  const totalMentions = analytics.totalMentions;
+  const activePlatforms = analytics.activePlatforms;
+  const aiPostsToday = analytics.aiPostsToday;
+  const positiveTrends = trends.filter((t: any) => t.sentiment === 'positive').length;
+
+  const handleRefreshData = () => {
+    refetchTrends();
+    refetchAnalytics();
+    setLastUpdate(new Date());
+    toast({
+      title: "Data Refreshed",
+      description: "Dashboard data has been updated with the latest trends.",
+    });
+  };
+
+  // Mock data for charts (Keeping chart mocks for now as backend might not return exact chart format yet)
   const trendActivityData = [
     { time: '00:00', trends: 45, engagement: 1200 },
     { time: '04:00', trends: 32, engagement: 800 },
@@ -122,39 +167,6 @@ const Dashboard = () => {
     { hour: '20', day: 'Mon', value: 52 },
   ];
 
-  // Mock real-time trend data
-  useEffect(() => {
-    const mockTrends: TrendData[] = [
-      { id: '1', hashtag: '#AIRevolution', count: 45672, platform: 'Twitter', sentiment: 'positive', change: 12.5, peakTime: '2h ago', popularity: 95, growth: 12.5 },
-      { id: '2', hashtag: '#ClimateAction', count: 38291, platform: 'Reddit', sentiment: 'positive', change: 8.3, peakTime: '1h ago', popularity: 88, growth: 8.3 },
-      { id: '3', hashtag: '#TechLayoffs', count: 29853, platform: 'Twitter', sentiment: 'negative', change: -15.2, peakTime: '3h ago', popularity: 76, growth: -15.2 },
-      { id: '4', hashtag: '#WorldCup2024', count: 67431, platform: 'Instagram', sentiment: 'positive', change: 22.1, peakTime: '30m ago', popularity: 92, growth: 22.1 },
-      { id: '5', hashtag: '#CryptoNews', count: 19284, platform: 'Twitter', sentiment: 'neutral', change: -3.7, peakTime: '2h ago', popularity: 68, growth: -3.7 },
-      { id: '6', hashtag: '#HealthTech', count: 15632, platform: 'LinkedIn', sentiment: 'positive', change: 18.9, peakTime: '1h ago', popularity: 71, growth: 18.9 },
-      { id: '7', hashtag: '#RemoteWork', count: 24567, platform: 'LinkedIn', sentiment: 'neutral', change: 5.2, peakTime: '4h ago', popularity: 82, growth: 5.2 },
-      { id: '8', hashtag: '#Sustainability', count: 31245, platform: 'Reddit', sentiment: 'positive', change: 14.7, peakTime: '2h ago', popularity: 79, growth: 14.7 },
-      { id: '9', hashtag: '#DigitalMarketing', count: 18934, platform: 'Instagram', sentiment: 'positive', change: 9.8, peakTime: '3h ago', popularity: 74, growth: 9.8 },
-      { id: '10', hashtag: '#Innovation', count: 22156, platform: 'Twitter', sentiment: 'positive', change: 11.3, peakTime: '1h ago', popularity: 77, growth: 11.3 },
-    ];
-
-    setTrends(mockTrends);
-
-    // Simulate real-time updates
-    const interval = setInterval(() => {
-      if (isLive) {
-        setTrends(prevTrends => 
-          prevTrends.map(trend => ({
-            ...trend,
-            count: trend.count + Math.floor(Math.random() * 100),
-            change: trend.change + (Math.random() - 0.5) * 2
-          }))
-        );
-        setLastUpdate(new Date());
-      }
-    }, 5000);
-
-    return () => clearInterval(interval);
-  }, [isLive]);
 
   const recentActivities: ActivityItem[] = [
     {
@@ -294,13 +306,7 @@ const Dashboard = () => {
     // This would typically use React Router
   };
 
-  const handleRefreshData = () => {
-    setLastUpdate(new Date());
-    toast({
-      title: "Data Refreshed",
-      description: "Dashboard data has been updated with the latest trends.",
-    });
-  };
+
 
   const handleExportData = () => {
     toast({
@@ -309,10 +315,7 @@ const Dashboard = () => {
     });
   };
 
-  const totalMentions = trends.reduce((sum, trend) => sum + trend.count, 0);
-  const positiveTrends = trends.filter(t => t.sentiment === 'positive').length;
-  const activePlatforms = platformStatuses.filter(p => p.status === 'connected').length;
-  const aiPostsToday = 47; // Mock data
+  // Calculations moved to derived state above
 
   return (
     <div className="min-h-screen gradient-dashboard p-6">
@@ -600,7 +603,7 @@ const Dashboard = () => {
             <Card className="gradient-card border-border shadow-card">
               <CardHeader>
                 <CardTitle className="text-lg flex items-center gap-2">
-                  <PieChart className="w-5 h-5" />
+                  <PieChartIcon className="w-5 h-5" />
                   Sentiment Distribution
                 </CardTitle>
               </CardHeader>
