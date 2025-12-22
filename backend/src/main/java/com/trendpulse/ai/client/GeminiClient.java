@@ -29,6 +29,10 @@ public class GeminiClient {
     
     @Value("${app.ai.gemini.model:gemini-1.5-flash}")
     private String model;
+
+    private boolean isMockMode() {
+        return "your-gemini-api-key".equals(apiKey) || "your_gemini_api_key".equals(apiKey);
+    }
     
     private static final String GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/";
     
@@ -36,6 +40,16 @@ public class GeminiClient {
      * Analyze trend data with Gemini
      */
     public AIAnalysisResponse analyzeTrend(String topic, String subreddit, String postsData) {
+        if (isMockMode()) {
+            log.info("Using Mock Mode for Gemini analysis on topic: {}", topic);
+            return AIAnalysisResponse.builder()
+                    .summary("This trend explores the latest developments in AI technology, showing significant community interest and high engagement levels.")
+                    .sentiment("positive")
+                    .keyInsights("Strong positive sentiment;Rapidly growing interest;High discussion volume")
+                    .contentSuggestions("Post about future predictions;Compare with similar technologies")
+                    .confidenceScore(0.9)
+                    .build();
+        }
         log.info("Analyzing trend '{}' from r/{} with Gemini", topic, subreddit);
         
         try {

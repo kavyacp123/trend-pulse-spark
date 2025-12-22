@@ -44,8 +44,12 @@ public class RedditOAuthService {
     @Value("${spring.security.oauth2.client.registration.reddit.redirect-uri}")
     private String redirectUri;
     
-    @Value("${spring.security.oauth2.client.provider.reddit.token-uri}")
-    private String tokenUri;
+    @Value("${app.jwt.secret:}")
+    private String jwtSecret;
+
+    private boolean isMockMode() {
+        return "your-reddit-client-id".equals(clientId) || "your_reddit_client_id".equals(clientId);
+    }
     
     @Value("${spring.security.oauth2.client.provider.reddit.user-info-uri}")
     private String userInfoUri;
@@ -54,6 +58,9 @@ public class RedditOAuthService {
      * Get Reddit authorization URL
      */
     public String getAuthorizationUrl(String state) {
+        if (isMockMode()) {
+            return "http://localhost:5173/dashboard?mock_auth=true";
+        }
         return String.format(
                 "https://www.reddit.com/api/v1/authorize?client_id=%s&response_type=code&state=%s&redirect_uri=%s&duration=permanent&scope=identity,read,submit",
                 clientId, state, redirectUri
@@ -65,6 +72,26 @@ public class RedditOAuthService {
      */
     @Transactional
     public AuthResponse handleCallback(String code) {
+        if (isMockMode()) {
+            log.info("Mocking Reddit OAuth callback for demo user");
+            User user = userRepository.findByUsername("demo_analyst")
+                    .orElseThrow(() -> new ServiceException("Demo user not found. Please run migrations."));
+            
+            String jwtAccessToken = jwtTokenService.generateAccessToken(user.getId(), user.getUsername());
+            String jwtRefreshToken = jwtTokenService.generateRefreshToken(user.getId(), user.getUsername());
+            
+            return AuthResponse.builder()
+                    .accessToken(jwtAccessToken)
+                    .refreshToken(jwtRefreshToken)
+                    .tokenType("Bearer")
+                    .expiresIn(jwtTokenService.getAccessTokenExpiration() / 1000)
+                    .user(AuthResponse.UserInfo.builder()
+                            .id(user.getId())
+                            .username(user.getUsername())
+                            .email(user.getEmail())
+                            .build())
+                    .build();
+        }
         // Exchange code for tokens
         Map<String, Object> tokenResponse = exchangeCodeForToken(code);
         

@@ -41,6 +41,9 @@ public class RedditApiClient {
     @CircuitBreaker(name = "reddit-api", fallbackMethod = "fetchPostsFallback")
     @RateLimiter(name = "reddit-api")
     public List<RedditPost> fetchHotPosts(User user, String subreddit, int limit) {
+        if (isMockMode()) {
+            return getMockPosts(subreddit, limit);
+        }
         String accessToken = redditOAuthService.getRedditAccessToken(user);
         
         WebClient webClient = webClientBuilder.build();
@@ -57,6 +60,45 @@ public class RedditApiClient {
         
         return parseRedditResponse(response);
     }
+
+    /**
+     * Check if Mock Mode should be used
+     */
+    private boolean isMockMode() {
+        return "your-reddit-client-id".equals(clientId) || "your_reddit_client_id".equals(clientId);
+    }
+
+    /**
+     * Get mock trends for testing
+     */
+    private List<RedditPost> getMockPosts(String subreddit, int limit) {
+        log.info("Using Mock Mode for Reddit API calls in r/{}", subreddit);
+        List<RedditPost> posts = new ArrayList<>();
+        
+        String[] topics = {
+            "New AI features in latest framework",
+            "Why this programming language is trending",
+            "Revolutionary hardware announced",
+            "Major update to popular library",
+            "Deep dive into cloud architecture"
+        };
+        
+        for (int i = 0; i < Math.min(limit, topics.length); i++) {
+            posts.add(RedditPost.builder()
+                    .id("mock_" + i)
+                    .title(topics[i])
+                    .selftext("This is a mock post content for testing the trend engine.")
+                    .author("dev_tester")
+                    .subreddit(subreddit)
+                    .score(150 + (i * 50))
+                    .numComments(45 + (i * 10))
+                    .ups(150 + (i * 50))
+                    .upvoteRatio(0.95)
+                    .createdUtc(Instant.now().minusSeconds(3600 * i))
+                    .build());
+        }
+        return posts;
+    }
     
     /**
      * Fetch new posts from a subreddit
@@ -64,6 +106,9 @@ public class RedditApiClient {
     @CircuitBreaker(name = "reddit-api", fallbackMethod = "fetchPostsFallback")
     @RateLimiter(name = "reddit-api")
     public List<RedditPost> fetchNewPosts(User user, String subreddit, int limit) {
+        if (isMockMode()) {
+            return getMockPosts(subreddit, limit);
+        }
         String accessToken = redditOAuthService.getRedditAccessToken(user);
         
         WebClient webClient = webClientBuilder.build();
